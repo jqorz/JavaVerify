@@ -22,12 +22,12 @@ import svmHelper.svm_train;
 public class Train {
 	
 	/**
-	 * ç±»æ ‡å·mapï¼Œå¦‚ï¼ša=>1 b=>2
+	 * Àà±êºÅmap£¬Èç£ºa=>1 b=>2
 	 */
 	private HashMap<String, Integer> labelMap = null;
 	
 	/**
-	 * æ‰€æœ‰å›¾åƒåˆ†ç±»çš„mapï¼Œkeyä¸ºå½“å‰ç±»æ ‡å·ï¼Œ valueä¸ºå¯¹åº”çš„å›¾ç‰‡ï¼Œå›¾ç‰‡ä»¥äºŒç»´æ•°ç»„çš„å½¢å¼ä¿å­˜
+	 * ËùÓĞÍ¼Ïñ·ÖÀàµÄmap£¬keyÎªµ±Ç°Àà±êºÅ£¬ valueÎª¶ÔÓ¦µÄÍ¼Æ¬£¬Í¼Æ¬ÒÔ¶şÎ¬Êı×éµÄĞÎÊ½±£´æ
 	 */
 	private HashMap<String, ArrayList<Integer[][]>> imageMap = null;
 	
@@ -73,7 +73,7 @@ public class Train {
 
 	private void loadImage(){
 		File dir = new File("4_scale/");
-		//åªåˆ—å‡ºjpg
+		//Ö»ÁĞ³öjpg
 		File[] files = dir.listFiles(new FilenameFilter() {
 			
 			public boolean isJpg(String file){   
@@ -105,7 +105,7 @@ public class Train {
 	}
 	
 	/**
-	 * å°†image è½¬æ¢åˆ° mapä¸­
+	 * ½«image ×ª»»µ½ mapÖĞ
 	 * @param file
 	 * @throws IOException
 	 */
@@ -117,7 +117,7 @@ public class Train {
 		
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
-				//é»‘è‰²ç‚¹æ ‡è®°ä¸º1
+				//ºÚÉ«µã±ê¼ÇÎª1
 				int value = ImageUtil.isBlack(image.getRGB(x, y)) ? 1 : 0;
 				imgArr[y][x] = value;
 			}
@@ -137,7 +137,7 @@ public class Train {
 	
 	
 	/**
-	 * è½¬æ¢æˆsvmé¢„æ–™çš„æ ¼å¼
+	 * ×ª»»³ÉsvmÔ¤ÁÏµÄ¸ñÊ½
 	 */
 	public void svmFormat(){
 		PrintWriter writer = null;
@@ -174,19 +174,19 @@ public class Train {
 	
 	
 	/**
-	 * ç”Ÿæˆæ¨¡å‹
+	 * Éú³ÉÄ£ĞÍ
 	 * @throws IOException
 	 */
 	public static void run() throws IOException{
-		//trainå‚æ•°
+		//train²ÎÊı
 		String[] arg = {"-t","0","svm/svm.train","svm/svm.model"};
 		
-		//predictå‚æ•°
+		//predict²ÎÊı
 		String[] parg = {"svm/svmscale.test","svm/svm.model","svm/result.txt"};
 		
-		System.out.println("è®­ç»ƒå¼€å§‹");
+		System.out.println("ÑµÁ·¿ªÊ¼");
 		svm_train.main(arg);
-		System.out.println("è®­ç»ƒç»“æŸ");
+		System.out.println("ÑµÁ·½áÊø");
 	}
 	
 	private static void produceLabel(){

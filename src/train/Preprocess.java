@@ -1,170 +1,221 @@
 package train;
 
-import java.awt.Color;
+import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 
-import javax.imageio.ImageIO;
-
 public class Preprocess {
-	
-	public Preprocess(){
-		
-	}
-	
-	private void run(){
-		File dir = new File("download");
-		//åªåˆ—å‡ºjpg
-		File[] files = dir.listFiles(new FilenameFilter() {
-			
-			public boolean isJpg(String file){   
-			    if (file.toLowerCase().endsWith(".jpg")){   
-			      return true;   
-			    }else{   
-			      return false;   
-			    }   
-			}
-			
-			@Override
-			public boolean accept(File dir, String name) {
-				// TODO Auto-generated method stub
-				return isJpg(name);
-			}
-		});
-		
-		for (File file : files) {
-			try {
-				BufferedImage img = ImageIO.read(file);
-				BufferedImage binaryImg = getBinaryImage(img);
-				ImageIO.write(binaryImg, "JPG", new File("1_gray/" + file.getName()));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	/**
-	 * äºŒå€¼åŒ–
-	 * @param sourceImage
-	 * @return äºŒå€¼åŒ–ä¹‹åçš„å›¾åƒ
-	 */
-	public BufferedImage getBinaryImage(BufferedImage sourceImage){
-		double Wr = 0.299;
-		double Wg = 0.587;
-		double Wb = 0.114;
-		
-		int width = sourceImage.getWidth();
-		int height = sourceImage.getHeight();
-		int[][] gray = new int[width][height];
-		
-		//ç°åº¦åŒ–
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
-				Color color = new Color(sourceImage.getRGB(x, y));
-				int rgb = (int) ((color.getRed()*Wr + color.getGreen()*Wg + color.getBlue()*Wb) / 3);
-				gray[x][y] = rgb;
-			}
-		}
-		
-		BufferedImage binaryBufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_BINARY);
-		//äºŒå€¼åŒ–
-		int threshold = getOstu(gray, width, height);
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
-				if (gray[x][y] > threshold) {
-					int max = new Color(255, 255, 255).getRGB();
-					gray[x][y] = max;
-				}else{
-					int min = new Color(0, 0, 0).getRGB();
-					gray[x][y] = min;
-				}
-				
-				binaryBufferedImage.setRGB(x, y, gray[x][y]);
-			}
-		}
-		
-		return binaryBufferedImage;
-	}
-	
-	/**
-	 * è·å¾—äºŒå€¼åŒ–å›¾åƒ
-	 * æœ€å¤§ç±»é—´æ–¹å·®æ³•
-	 * @param gray
-	 * @param width
-	 * @param height
-	 */
-	private int getOstu(int[][] gray, int width, int height){
-		int grayLevel = 256;
-		int[] pixelNum = new int[grayLevel];
-		//è®¡ç®—æ‰€æœ‰è‰²é˜¶çš„ç›´æ–¹å›¾
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
-				int color = gray[x][y];
-				pixelNum[color] ++;
-			}
-		}
-		
-		double sum = 0;
-		int total = 0;
-		for (int i = 0; i < grayLevel; i++) {
-			sum += i*pixelNum[i]; //x*f(x)è´¨é‡çŸ©ï¼Œä¹Ÿå°±æ˜¯æ¯ä¸ªç°åº¦çš„å€¼ä¹˜ä»¥å…¶ç‚¹æ•°ï¼ˆå½’ä¸€åŒ–åä¸ºæ¦‚ç‡ï¼‰ï¼Œsumä¸ºå…¶æ€»å’Œ
-			total += pixelNum[i]; //nä¸ºå›¾è±¡æ€»çš„ç‚¹æ•°ï¼Œå½’ä¸€åŒ–åå°±æ˜¯ç´¯ç§¯æ¦‚ç‡
-		}
-		double sumB = 0;//å‰æ™¯è‰²è´¨é‡çŸ©æ€»å’Œ
-		int threshold = 0;
-		double wF = 0;//å‰æ™¯è‰²æƒé‡
-		double wB = 0;//èƒŒæ™¯è‰²æƒé‡
-		
-		double maxFreq = -1.0;//æœ€å¤§ç±»é—´æ–¹å·®
-		
-		for (int i = 0; i < grayLevel; i++) {
-			wB += pixelNum[i]; //wBä¸ºåœ¨å½“å‰é˜ˆå€¼èƒŒæ™¯å›¾è±¡çš„ç‚¹æ•°
-			if (wB == 0) { //æ²¡æœ‰åˆ†å‡ºå‰æ™¯åæ™¯
-				continue;
-			}
-			
-			wF = total - wB; //wBä¸ºåœ¨å½“å‰é˜ˆå€¼å‰æ™¯å›¾è±¡çš„ç‚¹æ•°
-			if (wF == 0) {//å…¨æ˜¯å‰æ™¯å›¾åƒï¼Œåˆ™å¯ä»¥ç›´æ¥break
-				break;
-			}
-			
-			sumB += (double)(i*pixelNum[i]);
-			double meanB = sumB / wB;
-			double meanF = (sum - sumB) / wF;
-			//freqä¸ºç±»é—´æ–¹å·®
-			double freq = (double)(wF)*(double)(wB)*(meanB - meanF)*(meanB - meanF);
-			if (freq > maxFreq) {
-				maxFreq = freq;
-				threshold = i;
-			}
-		}
-		
-		return threshold;
-	}
-	
-	public static void main(String[] args){
-		System.out.println("---begin---");
-		
-		long start = System.currentTimeMillis();
-		Preprocess model = new Preprocess();
-		model.run();
-		long end = System.currentTimeMillis();
-		
-		System.out.println("è€—æ—¶ï¼š" + (end - start));
-		System.out.println("---end----");
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
+    /**
+     * ÓĞĞ§ÏñËØÑÕÉ«Öµ
+     */
+    private static final int TARGET_COLOR = Color.BLACK.getRGB();
+    /**
+     * ÎŞĞ§ÏñËØÑÕÉ«Öµ
+     */
+    private static final int USELESS_COLOR = Color.WHITE.getRGB();
+
+    public Preprocess() {
+
+    }
+
+    public static void main(String[] args) {
+        System.out.println("---begin---");
+
+        long start = System.currentTimeMillis();
+        Preprocess model = new Preprocess();
+        model.run();
+        long end = System.currentTimeMillis();
+
+        System.out.println("ºÄÊ±£º" + (end - start));
+        System.out.println("---end----");
+    }
+
+    private void run() {
+        File dir = new File("download");
+        //Ö»ÁĞ³öjpg
+        File[] files = dir.listFiles(new FilenameFilter() {
+
+            public boolean isJpg(String file) {
+                if (file.toLowerCase().endsWith(".jpg")) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean accept(File dir, String name) {
+                // TODO Auto-generated method stub
+                return isJpg(name);
+            }
+        });
+
+        for (File file : files) {
+            try {
+                BufferedImage img = ImageIO.read(file);
+                BufferedImage binaryImg = getBinaryImage(img);
+                ImageIO.write(binaryImg, "JPG", new File("1_gray/" + file.getName()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * ¶şÖµ»¯
+     *
+     * @param sourceImage
+     * @return ¶şÖµ»¯Ö®ºóµÄÍ¼Ïñ
+     */
+    public BufferedImage getBinaryImage(BufferedImage sourceImage) {
+        double Wr = 0.299;
+        double Wg = 0.587;
+        double Wb = 0.114;
+
+        int width = sourceImage.getWidth();
+        int height = sourceImage.getHeight();
+        int[][] gray = new int[width][height];
+
+        //»Ò¶È»¯
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                Color color = new Color(sourceImage.getRGB(x, y));
+                int rgb = (int) ((color.getRed() * Wr + color.getGreen() * Wg + color.getBlue() * Wb) / 3);
+                gray[x][y] = rgb;
+            }
+        }
+
+        BufferedImage binaryBufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_BINARY);
+        //¶şÖµ»¯
+        int threshold = getOstu(gray, width, height);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                if (gray[x][y] > threshold) {
+                    int max = new Color(255, 255, 255).getRGB();
+                    gray[x][y] = max;
+                } else {
+                    int min = new Color(0, 0, 0).getRGB();
+                    gray[x][y] = min;
+                }
+
+                binaryBufferedImage.setRGB(x, y, gray[x][y]);
+            }
+        }
+
+        return denoise(binaryBufferedImage);
+    }
+
+    /**
+     * È¥Ôë
+     *
+     * @param img Í¼ĞÎÑéÖ¤ÂëÎÄ¼ş
+     * @return
+     */
+    private BufferedImage denoise(BufferedImage img) {
+        int width = img.getWidth();
+        int height = img.getHeight();
+        for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < height; ++y) {
+                if (x > 1 && x < width - 1 && y > 8 && y < height - 3
+                        && isTarget(img.getRGB(x, y))) {
+                    img.setRGB(x, y, TARGET_COLOR);
+                } else {
+                    img.setRGB(x, y, USELESS_COLOR);
+                }
+            }
+        }
+
+        for (int x = 1; x < width - 1; ++x) {
+            for (int y = 8; y < height - 3; ++y) {
+                if (img.getRGB(x, y) == TARGET_COLOR) {
+                    int shotNum = 0;
+                    for (int i = 0; i < 9; ++i) {
+                        shotNum += img.getRGB(x - 1 + (i % 3), y - 1 + (i / 3)) == TARGET_COLOR ? 1 : 0;
+                    }
+                    if (shotNum <= 3) {
+                        img.setRGB(x, y, USELESS_COLOR);
+                    }
+                }
+            }
+        }
+
+        return img;
+    }
+
+    /**
+     * Ä¿±êÏñËØÅĞ¶Ï
+     * <br />£¨»ùÓÚÃ÷¶È£©
+     *
+     * @param colorInt
+     * @return
+     */
+    private boolean isTarget(int colorInt) {
+        Color color = new Color(colorInt);
+        float[] hsb = new float[3];
+        Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), hsb);
+        return hsb[2] < 0.7f; // bĞ¡ÓÚ0.7
+    }
+
+    /**
+     * »ñµÃ¶şÖµ»¯Í¼Ïñ
+     * ×î´óÀà¼ä·½²î·¨
+     *
+     * @param gray
+     * @param width
+     * @param height
+     */
+    private int getOstu(int[][] gray, int width, int height) {
+        int grayLevel = 256;
+        int[] pixelNum = new int[grayLevel];
+        //¼ÆËãËùÓĞÉ«½×µÄÖ±·½Í¼
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                int color = gray[x][y];
+                pixelNum[color]++;
+            }
+        }
+
+        double sum = 0;
+        int total = 0;
+        for (int i = 0; i < grayLevel; i++) {
+            sum += i * pixelNum[i]; //x*f(x)ÖÊÁ¿¾Ø£¬Ò²¾ÍÊÇÃ¿¸ö»Ò¶ÈµÄÖµ³ËÒÔÆäµãÊı£¨¹éÒ»»¯ºóÎª¸ÅÂÊ£©£¬sumÎªÆä×ÜºÍ
+            total += pixelNum[i]; //nÎªÍ¼Ïó×ÜµÄµãÊı£¬¹éÒ»»¯ºó¾ÍÊÇÀÛ»ı¸ÅÂÊ
+        }
+        double sumB = 0;//Ç°¾°É«ÖÊÁ¿¾Ø×ÜºÍ
+        int threshold = 0;
+        double wF = 0;//Ç°¾°É«È¨ÖØ
+        double wB = 0;//±³¾°É«È¨ÖØ
+
+        double maxFreq = -1.0;//×î´óÀà¼ä·½²î
+
+        for (int i = 0; i < grayLevel; i++) {
+            wB += pixelNum[i]; //wBÎªÔÚµ±Ç°ãĞÖµ±³¾°Í¼ÏóµÄµãÊı
+            if (wB == 0) { //Ã»ÓĞ·Ö³öÇ°¾°ºó¾°
+                continue;
+            }
+
+            wF = total - wB; //wBÎªÔÚµ±Ç°ãĞÖµÇ°¾°Í¼ÏóµÄµãÊı
+            if (wF == 0) {//È«ÊÇÇ°¾°Í¼Ïñ£¬Ôò¿ÉÒÔÖ±½Óbreak
+                break;
+            }
+
+            sumB += (double) (i * pixelNum[i]);
+            double meanB = sumB / wB;
+            double meanF = (sum - sumB) / wF;
+            //freqÎªÀà¼ä·½²î
+            double freq = (double) (wF) * (double) (wB) * (meanB - meanF) * (meanB - meanF);
+            if (freq > maxFreq) {
+                maxFreq = freq;
+                threshold = i;
+            }
+        }
+
+        return threshold;
+    }
+
 
 }

@@ -56,7 +56,7 @@ public class Identy{
 	}
 	
 	/**
-	 * å…·ä½“çš„é¢„æµ‹ï¼Œè¿”å›žè¯†åˆ«çš„æ–‡å­—
+	 * ¾ßÌåµÄÔ¤²â£¬·µ»ØÊ¶±ðµÄÎÄ×Ö
 	 * @param file
 	 * @return
 	 * @throws IOException

@@ -70,7 +70,8 @@ Recognize the CAPTCHA of some specified websites
       |
       |—— test1 用来测试其他的，不用管它
  
-      
+### 用法
+![用法](/use_method.jpg)
       
       
     
